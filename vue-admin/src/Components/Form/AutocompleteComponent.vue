@@ -31,6 +31,13 @@ export default {
             required: false,
             default: '',
         },
+        search_params: {
+            type: Object,
+            required: false,
+            default: () => {
+                return {};
+            },
+        },
         autosearch: {
             type: Boolean,
             required: false,
@@ -53,19 +60,17 @@ export default {
             required: false,
             default: false,
         },
-        can_create: {
+        css_class: {
+            type: String,
+            required: false,
+            default: '',
+        },
+        create: {
             type: Boolean,
             required: false,
             default: false,
         },
-        search_params: {
-            type: Object,
-            required: false,
-            default: () => {
-                return {};
-            },
-        },
-        css_class: {
+        create_url: {
             type: String,
             required: false,
             default: '',
@@ -79,8 +84,8 @@ export default {
         }
     },
     methods: {
-        search(force = false) {
-            if ( !force && this.term.length < 2 ) {
+        search(is_autosearch = false) {
+            if ( !is_autosearch && this.term.length < 2 ) {
                 this.results = false;
                 this.results_visible = false;
                 return;
@@ -88,14 +93,14 @@ export default {
 
             let params = {
                 term: this.term,
-                limit: force ? this.autosearch_limit : this.limit,
+                limit: is_autosearch ? this.autosearch_limit : this.limit,
                 ...this.search_params,
             };
 
-            if ( force ) {
+            if ( is_autosearch ) {
                 params = {
                     term: '',
-                    limit: force ? this.autosearch_limit : this.limit,
+                    limit: is_autosearch ? this.autosearch_limit : this.limit,
                     ...this.search_params,
                     ...this.autosearch_params
                 };
@@ -104,7 +109,11 @@ export default {
             Request.get(this.url ? this.url : `/${this.domain}/search`, params)
             .then(data => {
                 this.results = data.items;
-                this.results_visible = force ? false : true;
+                this.results_visible = is_autosearch ? false : true;
+
+                if ( is_autosearch && data.items.length == 1 ) {
+                    this.select(data.items[0]);
+                }
             });
         },
 
@@ -133,23 +142,30 @@ export default {
         },
 
         setTerm() {
-            if ( !this.value || this.text ) {
-                this.term = '';
-                return;
-            }
-
-            Request.get(this.url ? this.url : `/${this.domain}/search`, { id: this.value, limit: 1 })
-            .then(data => {
-                if ( data.items.length ) {
-                    this.term = data.items[0].text;
+            return new Promise(resolve => {
+                if ( this.value == '' || this.text ) {
+                    this.term = '';
+                    return resolve();
                 }
+
+                Request.get(this.url ? this.url : `/${this.domain}/search`, { id: this.value, limit: 1 })
+                .then(data => {
+                    if ( data.items.length ) {
+                        this.term = data.items[0].text;
+                    }
+
+                    resolve();
+                });
             });
         },
     },
     mounted() {
-        if ( this.autosearch ) {
-            this.search(true);
-        }
+        this.setTerm()
+        .then(() => {
+            if ( this.term == '' && this.autosearch ) {
+                this.search(true);
+            }
+        });
 
         for ( let css_class of this.$el.classList ) {
             if ( ['autocomplete', 'autocomplete--inline'].includes(css_class) ) {
@@ -166,7 +182,13 @@ export default {
     watch: {
         value() {
             this.setTerm();
-        }
+        },
+
+        search_params() {
+            if ( this.autosearch ) {
+                this.search(true);
+            }
+        },
     },
 }
 </script>
@@ -174,7 +196,7 @@ export default {
 <template>
 <div class="autocomplete">
     <input type="text" class="input"
-        :placeholder="this.placeholder || 'Search '+Str.ucwords(this.domain)"
+        :placeholder="this.placeholder || 'Search '+Str.ucwords(this.domain.replace('/', ' '))"
         v-model="term"
         ref="input"
         @input="search(false)"
@@ -191,7 +213,10 @@ export default {
                 {{ result.text }}
             </a>
         </template>
-        <div v-else>No results.</div>
+        <div class="flex items-center" v-else>
+            No results.
+            <a @click="submit" class="ml-20 btn btn--tiny btn--auto" v-if="create">Create</a>
+        </div>
     </div>
 
     <a @click="$modal.show('')" v-if="enable_modal" class="autocomplete__search">

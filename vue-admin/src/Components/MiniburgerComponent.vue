@@ -23,7 +23,7 @@ export default {
 
 <template>
 <div class="miniburger">
-    <a @click="show = !show" :class="!sprite ? 'dots-icon' : ''" ref="trigger">
+    <a @click="show = !show" :class="!sprite ? 'icon-dots' : ''" ref="trigger">
         <sprite :id="sprite" v-if="sprite" />
         <i v-else></i>
     </a>

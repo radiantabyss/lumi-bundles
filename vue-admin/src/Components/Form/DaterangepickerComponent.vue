@@ -14,7 +14,7 @@ export default {
             required: false,
             default() {
                 return [
-                    'last_3_hours',
+                    'none',
                     'today',
                     'yesterday',
                     'last_7_days',
@@ -36,6 +36,10 @@ export default {
     },
     computed: {
         text() {
+            if ( this.value === '' ) {
+                return 'None';
+            }
+
             if ( this.windows.includes(this.value) ) {
                 return Str.ucwords(this.value);
             }

@@ -3,7 +3,8 @@ export default {
     props: {
         value: {
             type: [String, Number],
-            required: true,
+            required: false,
+            default: '',
         },
         type: {
             type: String,
@@ -32,20 +33,42 @@ export default {
         },
     },
     data() {
-        let ranges = {
-            minute: range(0, 59),
-            hour: range(0, 23),
-            day: range(1, 31),
-            month: range(1, 12),
-        };
-
         return {
-            current_value: isNaN(parseFloat(this.value)) ? '' : parseFloat(this.value),
-            current_range: this.type ? ranges[this.type] : range(this.from, this.to),
+            current_value: null,
+            current_range: null,
             is_visible: false,
         }
     },
+    computed: {
+        text() {
+            if ( this.type == 'month' ) {
+                return this.$options.filters.number_to_month(this.current_value);
+            }
+
+            if ( this.current_value == '' ) {
+                return this.current_value;
+            }
+
+            return Str.leading_zero(this.current_value);
+        }
+    },
     methods: {
+        mount() {
+            let year = new Date().getFullYear();
+
+            let ranges = {
+                minute: range(0, 59),
+                hour: range(0, 23),
+                day: range(1, 31),
+                month: range(1, 12),
+                year: range(year - 8, year),
+            };
+
+            this.current_value = isNaN(parseFloat(this.value)) ? '' : parseFloat(this.value);
+            this.current_range = this.type ? ranges[this.type] : range(this.from, this.to);
+            this.is_visible = false;
+        },
+
         show() {
             this.is_visible = true;
         },
@@ -59,20 +82,10 @@ export default {
             this.is_visible = false;
             this.$emit('input', this.leading_zero ? Str.leading_zero(i) : i);
         },
-
-        getCurrentValue() {
-            if ( this.type == 'month' ) {
-                return this.$options.filters.number_to_month(this.current_value);
-            }
-
-            if ( this.current_value == '' ) {
-                return this.current_value;
-            }
-
-            return Str.leading_zero(this.current_value);
-        }
     },
     mounted() {
+        this.mount();
+
         for ( let css_class of this.$el.classList ) {
             if ( ['numberpicker', `numberpicker--${this.type}`].includes(css_class) ) {
                 continue;
@@ -82,14 +95,19 @@ export default {
         }
 
         this.$el.className = `numberpicker numberpicker--${this.type}`;
-    }
+    },
+    watch: {
+        value() {
+            this.mount();
+        },
+    },
 }
 </script>
 
 <template>
 <div class="numberpicker" :class="`numberpicker--${type}`" @keydown.esc="hide">
     <input type="text" :placeholder="placeholder" autocomplete="off" readonly
-        @click="show" ref="input" :value="getCurrentValue()"
+        @click="show" ref="input" :value="text"
     />
     <ul :class="is_visible ? 'visible' : ''" v-closable="{exclude:['input'], handler: 'hide'}">
         <li v-for="i in current_range" :key="i" @click="select(i)" :class="i == current_value ? 'selected' : ''">

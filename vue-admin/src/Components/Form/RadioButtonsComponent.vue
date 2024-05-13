@@ -20,13 +20,11 @@ export default {
     },
     methods: {
         mount() {
-            let selected = this.value;
+            this.selected = this.value;
 
-            if ( selected === '' ) {
-                selected = Array.isArray(this.options) ? this.options[0] : Object.keys(this.options)[0];
+            if ( this.selected === '' ) {
+                this.select(Array.isArray(this.options) ? this.options[0] : Object.keys(this.options)[0]);
             }
-
-            this.selected = selected;
         },
 
         select(value) {

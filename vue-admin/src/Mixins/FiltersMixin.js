@@ -5,6 +5,11 @@ export default {
             required: false,
             default: true,
         },
+        store_key: {
+            type: String,
+            required: false,
+            default: '',
+        },
     },
     data() {
         return {
@@ -32,7 +37,7 @@ export default {
 
             //save to storage
             if ( this.store ) {
-                store_url_filters(this.$route.path, query);
+                store_url_filters(this.store_key || this.$route.path, query);
             }
         },
 
@@ -44,7 +49,7 @@ export default {
 
             //save to storage
             if ( this.store ) {
-                store_url_filters(this.$route.path, {});
+                store_url_filters(this.store_key || this.$route.path, {});
             }
         },
 
