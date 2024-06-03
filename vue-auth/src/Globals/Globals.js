@@ -8,6 +8,6 @@ export default {
     is_dev: process.env.NODE_ENV == 'development',
     is_local: process.env.VUE_APP_ENV == 'local',
     is_production: process.env.VUE_APP_ENV == 'production',
-    
+
     Auth: Store.state.Auth,
 }
